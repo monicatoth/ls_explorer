@@ -10,29 +10,33 @@ import argparse
 # Custom errors
 # -------------------------------------------------
 class Error(Exception):
-    """Base class for exceptions in this module."""
+    '''Base class for exceptions in this module.'''
     pass
 
 class PathError(Error):
-    """Errors arising from invalid filepaths."""
+    '''Errors arising from invalid filepaths.'''
     def __init__(self, message):
         self.message = message
 
 # Argument Parsing 
 # -------------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument('-p', '--path', default=os.getcwd(), help='Directory path to examine')
+parser.add_argument('-p', '--path', default=os.getcwd(), type=str, help='Directory path to examine')
+parser.add_argument('-l', '--levels', default=1, type=int, help='Number of directory levels to examine')
 args = vars(parser.parse_args())
 
 # Main code
 # -------------------------------------------------
 def fetch_path_info(path=args['path'], topdown=True, levels=1):
     '''Get the file and directory info for a given path, with options for greater depth either top-down or bottom-up'''
+    upper_limit = path.count('/') + (levels - 1)
+    if levels == 1: # a shortcut
+        dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
+        files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
+        return [(path, dirs, files)] # copying os.walk format
     walk_data = os.walk(path, topdown)
-    if list(walk_data) == []:
-        specify_path_error(path)
-    else:
-        print list(walk_data)
+    limited_walk_data = [x for x in list(walk_data) if x[0].count('/') <= upper_limit]
+    return limited_walk_data
 
 def specify_path_error(path):
     '''If path is invalid, os.walk returns an empty list. Raise PathError with more specific info.'''
@@ -53,4 +57,7 @@ def specify_path_error(path):
 # For testing purposes
 # -------------------------------------------------
 if __name__ == "__main__":
-    dir_info = fetch_path_info()
+    for i in args.keys(): 
+        print('{argname:<10s}: {argvalue}'.format(argname=i, argvalue=args[i]))
+    dir_info = fetch_path_info(path=args['path'], levels=args['levels'])
+    print dir_info
