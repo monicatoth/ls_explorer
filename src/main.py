@@ -15,8 +15,6 @@ logger.addHandler(console_handler)
 
 if __name__ == '__main__':
     logger.info('Initialized logging')
-    files = f.fetch_path_info()
-    print(files[0][2])
-    print(files[0][1])
+    n.narrate()
 
     
