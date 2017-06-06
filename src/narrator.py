@@ -8,7 +8,6 @@ logger = logging.getLogger('explorer.narrator')
 
 def narrate():
     ''' Stubby function to accept user input and quit when asked '''
-    quit_words = ['quit', 'exit']
     logger.info('Beginning narrate function')
     print "Welcome! Type 'quit' at any time to stop the program."
     while True: 
@@ -17,13 +16,28 @@ def narrate():
         logger.info('Parsed input: {}'.format(parsed_input))
         if parsed_input is None:
             logger.info('User has specified no command words')
-        elif parsed_input == 'look':
+            continue
+        elif len(parsed_input) > 1: 
+            logger.info('{} commands were received!'.format(len(parsed_input)))
+            priority_order = ['quit','help','look','go','verbose']
+            parsed_priorities = [priority_order.index(x) for x in parsed_input]
+            action = priority_order[min(parsed_priorities)]
+            logger.info('Highest priority is {}'.format(action))
+        elif len(parsed_input) == 0: # something went wrong
+            logger.error('An empty list of commands was returned.')
+        else: # one command was returned
+            action = parsed_input[0]
+        # now to execute these actions
+        if action == 'look':
             logger.info('User wants to look around')
-            look()
-        elif parsed_input == 'help':
+            look(os.getcwd())
+        elif action == 'help':
             logger.info('User has asked for help')
-            print "Feeling lost? Type 'quit' at any time to stop."
-        elif parsed_input == 'quit':
+            print("Feeling lost? Available commands are 'look' (look at current directory) and 'go' (move to another directory). Type 'quit' at any time to stop.")
+        elif action == 'go':
+            logger.info('User wants to move to a different directory')
+            print("Haha, this is embarrassing, I haven't coded that yet.")
+        elif action == 'quit':
             logger.info('User has chosen to exit')
             print('Goodbye!')
             break
@@ -32,11 +46,13 @@ def narrate():
             print('How funny!')
 
 def parse(input):
-    ''' Performs some basic string manipulation and returns result '''
-    commands = {'quit': ['quit','exit','leave','goodbye','bye'], \
-                'look': ['look', 'examine'], \
-                'help': ['help', 'options', 'menu'], 'verbose': ['verbose', 'debug'], \
-                'go': ['go', 'enter', 'ls', 'list', 'dir']}
+    ''' Processes the raw user input and returns a list of canonical
+    command word(s) from a large number of possible synonyms '''
+    commands = {'quit': ['quit','exit','leave','goodbye','bye','q'], \
+                'look': ['look','examine'], \
+                'help': ['help','options','menu','h'], \
+                'verbose': ['verbose','debug','v'], \
+                'go': ['go','enter','ls','list','dir','move']}
     # flattened list of all command dictionary values
     all_commands = [x for y in commands.values() for x in y]
     # now identify dict keys for all command words in user input
@@ -46,25 +62,28 @@ def parse(input):
     if len(command_input) == 0:
         logger.info('No commands found')
         return None
-    # if there are multiple commands present, pick the first one
-    # time saver: if the command is the dict key and not just a value
-    elif command_input[0] in commands.keys():
-        logger.info('Command identified as key value: {}'.format(command_input))
-        return command_input
-    elif command_input[0] in all_commands:
-        # this can be a one-line list comprehension later
-        for item in commands.keys():
-            if command_input[0] in commands[item]:
-                return item
-    else: # this shouldn't happen
-        logger.info('No commands found, but I could have sworn there was one around here somewhere... {}'.format(command_input))
-        return None
+    else:
+        # generate inverse dictionary 
+        # (Note that efficiency is a non-concern right now)
+        tuple_pairs = [[(v[v.index(i)], k) for i in v] for k, v in commands.items()]
+        flattened_tuples = [x for y in tuple_pairs for x in y]
+        inverse_commands = dict(flattened_tuples)
+        core_commands = [inverse_commands[i] for i in command_input]
+        return core_commands
     
-def look(files, dirs, path):
+def look(path):
     ''' Prints out the files and directories '''
     logger.info('Now preparing to narrate for {}'.format(path))
-    print 'You see some files: {}'.format(files)
-    print 'You can go: {}'.format(dirs)
+    files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
+    dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
+    if len(files) < 1:
+        print('There are no files here.')
+    else:
+        print('You see some files: {}'.format(files))
+    if len(dirs) < 1:
+        print('You can go: back the way you came')
+    else:
+        print('You can go: {}'.format(dirs))
 
 if __name__ == '__main__':
     narrate()
