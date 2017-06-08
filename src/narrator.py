@@ -7,47 +7,46 @@ import logging
 logger = logging.getLogger('explorer.narrator')
 
 def narrate():
-    ''' Stubby function to accept user input and quit when asked '''
+    ''' Stubby function to accept user input and pass it along to the
+    appropriate functions to fulfill commands '''
     logger.info('Beginning narrate function')
-    print "Welcome! Type 'quit' at any time to stop the program."
+    print "Welcome! Type 'quit' at any time to stop the program. Type 'help' to see your options."
     while True: 
         user_input = raw_input('> ')
-        parsed_input = parse(user_input)
-        logger.info('Parsed input: {}'.format(parsed_input))
-        if parsed_input is None:
+        commands = extract_commands(user_input)
+        logger.info('Command(s) found: {}'.format(commands))
+        if commands is None:
             logger.info('User has specified no command words')
             continue
-        elif len(parsed_input) > 1: 
-            logger.info('{} commands were received!'.format(len(parsed_input)))
-            priority_order = ['quit','help','look','go','verbose']
-            parsed_priorities = [priority_order.index(x) for x in parsed_input]
-            action = priority_order[min(parsed_priorities)]
-            logger.info('Highest priority is {}'.format(action))
-        elif len(parsed_input) == 0: # something went wrong
+        elif len(commands) == 0: # something went wrong
             logger.error('An empty list of commands was returned.')
-        else: # one command was returned
-            action = parsed_input[0]
-        # now to execute these actions
-        if action == 'look':
-            logger.info('User wants to look around')
-            look(os.getcwd())
-        elif action == 'help':
-            logger.info('User has asked for help')
-            print("Feeling lost? Available commands are 'look' (look at current directory) and 'go' (move to another directory). Type 'quit' at any time to stop.")
-        elif action == 'go':
-            logger.info('User wants to move to a different directory')
-            print("Haha, this is embarrassing, I haven't coded that yet.")
-        elif action == 'quit':
-            logger.info('User has chosen to exit')
-            print('Goodbye!')
-            break
-        else:
-            logger.info('Something else has happened: user said {} and it was parsed into {}'.format(user_input, parsed_input))
-            print('How funny!')
+        else: 
+            execute_command(commands)
+            continue
 
-def parse(input):
+def execute_command(action):
+    if action == 'look':
+        logger.info('User wants to look around')
+        look()
+    elif action == 'help':
+        logger.info('User has asked for help')
+        print("Feeling lost? Available commands are 'look' (look at current directory) and 'go' (move to another directory). Type 'quit' at any time to stop.")
+    elif action == 'go':
+        logger.info('User wants to move to a different directory')
+        print("Haha, this is embarrassing, I haven't coded that yet.")
+    elif action == 'quit':
+        logger.info('User has chosen to exit')
+        print('Goodbye!')
+        sys.exit(0)
+    else:
+        logger.info("We recognize this as a command but don't know what to do about it: {}".format(action))
+        print('How funny!')
+
+def extract_commands(input):
     ''' Processes the raw user input and returns a list of canonical
-    command word(s) from a large number of possible synonyms '''
+    command word(s) from a large number of possible synonyms; runs this
+    list through a prioritization function to return a single command 
+    to execute'''
     commands = {'quit': ['quit','exit','leave','goodbye','bye','q'], \
                 'look': ['look','examine'], \
                 'help': ['help','options','menu','h'], \
@@ -69,9 +68,32 @@ def parse(input):
         flattened_tuples = [x for y in tuple_pairs for x in y]
         inverse_commands = dict(flattened_tuples)
         core_commands = [inverse_commands[i] for i in command_input]
-        return core_commands
+    if len(core_commands) == 1:
+        return core_commands[0]
+    else:
+        prioritized = prioritize_commands(tuple(core_commands))
+        return prioritized
+
+def prioritize_commands(input):
+    ''' Receives a tuple of one or more commands; returns the highest priority
+    command as a string '''
+    priority_order = ('quit','help','look','go','verbose')
+    # Manage cases of poor input hygiene:
+    if len(input) < 2:
+        if len(input) == 1:
+            return input[0]
+        elif len(input) == 0 or input is None:
+            logger.error('Received an empty or null list of commands to prioritize')
+            return None
+        else: # something extremely weird has happened
+            logger.error('We should never see this error. Something unexpected happened while trying to prioritize these commands: {}'.format(input))
+            return None
+    # In the expected case (where the list is 2+ items long):
+    command_priorities = tuple(sorted(input, key=priority_order.index))
+    logger.info('Highest priority is {}'.format(command_priorities[0]))
+    return (command_priorities[0])
     
-def look(path):
+def look(path=os.getcwd()):
     ''' Prints out the files and directories '''
     logger.info('Now preparing to narrate for {}'.format(path))
     files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
