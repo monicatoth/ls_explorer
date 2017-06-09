@@ -14,7 +14,6 @@ def narrate():
     while True: 
         user_input = raw_input('> ')
         commands = extract_commands(user_input)
-        logger.info('Command(s) found: {}'.format(commands))
         if commands is None:
             logger.info('User has specified no command words')
             continue
@@ -26,7 +25,7 @@ def narrate():
 
 def execute_command(action):
     if action == 'look':
-        logger.info('User wants to look around')
+        logger.info('User wants to examine current directory')
         look()
     elif action == 'help':
         logger.info('User has asked for help')
@@ -40,7 +39,7 @@ def execute_command(action):
         sys.exit(0)
     else:
         logger.info("We recognize this as a command but don't know what to do about it: {}".format(action))
-        print('How funny!')
+        print("Sorry! I don't know what to tell you.")
 
 def extract_commands(input):
     ''' Processes the raw user input and returns a list of canonical
@@ -48,10 +47,10 @@ def extract_commands(input):
     list through a prioritization function to return a single command 
     to execute'''
     commands = {'quit': ['quit','exit','leave','goodbye','bye','q'], \
-                'look': ['look','examine'], \
+                'look': ['look','examine', 'ls', 'list', 'dir'], \
                 'help': ['help','options','menu','h'], \
                 'verbose': ['verbose','debug','v'], \
-                'go': ['go','enter','ls','list','dir','move']}
+                'go': ['go','enter','cd','move', 'walk']}
     # flattened list of all command dictionary values
     all_commands = [x for y in commands.values() for x in y]
     # now identify dict keys for all command words in user input
@@ -59,7 +58,6 @@ def extract_commands(input):
     logger.debug('Processed word list: {}'.format(word_list))
     command_input = [x for x in word_list if x in all_commands]
     if len(command_input) == 0:
-        logger.info('No commands found')
         return None
     else:
         # generate inverse dictionary 
@@ -69,6 +67,7 @@ def extract_commands(input):
         inverse_commands = dict(flattened_tuples)
         core_commands = [inverse_commands[i] for i in command_input]
     if len(core_commands) == 1:
+        logger.info("One command found: '{}', which is identical or synonymous with '{}'".format(command_input[0], core_commands[0]))
         return core_commands[0]
     else:
         prioritized = prioritize_commands(tuple(core_commands))
@@ -90,7 +89,7 @@ def prioritize_commands(input):
             return None
     # In the expected case (where the list is 2+ items long):
     command_priorities = tuple(sorted(input, key=priority_order.index))
-    logger.info('Highest priority is {}'.format(command_priorities[0]))
+    logger.info('{} commands found: {}, prioritized in this order: {}'.format(len(input), input, command_priorities))
     return (command_priorities[0])
     
 def look(path=os.getcwd()):
