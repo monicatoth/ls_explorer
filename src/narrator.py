@@ -30,9 +30,11 @@ def execute_command(action):
     elif action == 'help':
         logger.info('User has asked for help')
         print("Feeling lost? Available commands are 'look' (look at current directory) and 'go' (move to another directory). Type 'quit' at any time to stop.")
-    elif action == 'go':
-        logger.info('User wants to move to a different directory')
+    elif action == 'where':
+        logger.info('User wants an action that is only a placeholder at present')
         print("Haha, this is embarrassing, I haven't coded that yet.")
+    elif action == 'go':
+        move_path()
     elif action == 'quit':
         logger.info('User has chosen to exit')
         print('Goodbye!')
@@ -50,7 +52,8 @@ def extract_commands(input):
                 'look': ['look','examine', 'ls', 'list', 'dir'], \
                 'help': ['help','options','menu','h'], \
                 'verbose': ['verbose','debug','v'], \
-                'go': ['go','enter','cd','move', 'walk']}
+                'go': ['go','enter','cd','move', 'walk'], \
+                'where': ['where','pwd']}
     # flattened list of all command dictionary values
     all_commands = [x for y in commands.values() for x in y]
     # now identify dict keys for all command words in user input
@@ -105,6 +108,24 @@ def look(path=os.getcwd()):
         print('You can go: back the way you came')
     else:
         print('You can go: {}'.format(dirs))
+
+def move_path(path=os.getcwd(), rest_of_text=None):
+    ''' Changes the scope of focus to a different filepath '''
+    available_dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
+    # check to see if rest_of_text contains a file or folder
+    # if file:
+    # if garbage (nothing recognized):
+    # if no text:
+    if rest_of_text == '' or not rest_of_text:
+        logger.info('User wants to move, but did not supply any further input')
+        user_input = raw_input('Where do you want to move? (Type \'look\' to see available options.) ')
+        if user_input.lower() == 'look':
+            logger.info('User chose to look at current directory: {}'.format(path))
+            look(path)
+    # if directory:
+    #if 
+    return None
+    
 
 if __name__ == '__main__':
     narrate()
