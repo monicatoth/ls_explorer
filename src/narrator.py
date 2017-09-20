@@ -1,4 +1,4 @@
-# 2017-02-07 
+# Begun: 2017-02-07 
 
 import string
 import os, sys
@@ -7,10 +7,10 @@ import logging
 logger = logging.getLogger('explorer.narrator')
 
 def narrate():
-    ''' Stubby function to accept user input and pass it along to the
-    appropriate functions to fulfill commands '''
+    ''' Simple function to provide a user prompt, accept input, and pass it
+    along to the functions that recognize and fulfill commands '''
     logger.info('Beginning narrate function')
-    print "Welcome! Type 'quit' at any time to stop the program. Type 'help' to see your options."
+    print "Welcome! Type '\033[31mquit\033[0m' at any time to stop the program. Type '\033[31mhelp\033[0m' to see your options."
     while True: 
         user_input = raw_input('> ')
         commands = extract_commands(user_input)
@@ -20,13 +20,13 @@ def narrate():
         elif len(commands) == 0: # something went wrong
             logger.error('An empty list of commands was returned.')
         else: 
-            execute_command(commands)
+            execute_command(commands, user_input)
             continue
 
-def execute_command(action):
+def execute_command(action, raw_user_input=None):
     if action == 'look':
         logger.info('User wants to examine current directory')
-        look()
+        look(rest_of_text=raw_user_input)
     elif action == 'help':
         logger.info('User has asked for help')
         print("Feeling lost? Available commands are 'look' (look at current directory) and 'go' (move to another directory). Type 'quit' at any time to stop.")
@@ -34,7 +34,7 @@ def execute_command(action):
         logger.info('User wants an action that is only a placeholder at present')
         print("Haha, this is embarrassing, I haven't coded that yet.")
     elif action == 'go':
-        move_path()
+        move_path(rest_of_text=raw_user_input)
     elif action == 'quit':
         logger.info('User has chosen to exit')
         print('Goodbye!')
@@ -43,11 +43,18 @@ def execute_command(action):
         logger.info("We recognize this as a command but don't know what to do about it: {}".format(action))
         print("Sorry! I don't know what to tell you.")
 
+def execute_help():
+    logger.info('Beginning help function')
+    commands = {'look': 'look at current directory', 'go': 'move to another directory', 'quit': 'exit to the command line'}
+    print("Feeling lost? Available commands are:\n {0:<30}{1}\n \
+    {")
+
 def extract_commands(input):
     ''' Processes the raw user input and returns a list of canonical
     command word(s) from a large number of possible synonyms; runs this
     list through a prioritization function to return a single command 
     to execute'''
+    # todo: put commands and synonyms in other file; import from there
     commands = {'quit': ['quit','exit','leave','goodbye','bye','q'], \
                 'look': ['look','examine', 'ls', 'list', 'dir'], \
                 'help': ['help','options','menu','h'], \
@@ -94,8 +101,16 @@ def prioritize_commands(input):
     command_priorities = tuple(sorted(input, key=priority_order.index))
     logger.info('{} commands found: {}, prioritized in this order: {}'.format(len(input), input, command_priorities))
     return (command_priorities[0])
+
+def validate_path(current_path, input_text):
+    ''' Returns any valid absolute path via user input '''
+    # first check whether current_path is valid
+    # tokenize input
+    # check for full paths in input
+    # check for valid paths from current directory
+    return None
     
-def look(path=os.getcwd()):
+def look(path=os.getcwd(), rest_of_text=None):
     ''' Prints out the files and directories '''
     logger.info('Now preparing to narrate for {}'.format(path))
     files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
@@ -111,12 +126,13 @@ def look(path=os.getcwd()):
 
 def move_path(path=os.getcwd(), rest_of_text=None):
     ''' Changes the scope of focus to a different filepath '''
+    logger.info('Now running move_path function')
     available_dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
     # check to see if rest_of_text contains a file or folder
     # if file:
     # if garbage (nothing recognized):
     # if no text:
-    if rest_of_text == '' or not rest_of_text:
+    if rest_of_text == '' or rest_of_text == ' ' or not rest_of_text:
         logger.info('User wants to move, but did not supply any further input')
         user_input = raw_input('Where do you want to move? (Type \'look\' to see available options.) ')
         if user_input.lower() == 'look':
