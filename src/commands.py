@@ -7,18 +7,20 @@ import ansi_colors as ansi
 
 logger = logging.getLogger('explorer.narrator')
 
+# all commands and synonyms
+commands = {'quit': ['quit','exit','leave','goodbye','bye','q', 'stop'], \
+            'look': ['look','examine', 'ls', 'list', 'dir'], \
+            'help': ['help','options','menu','h'], \
+            'verbose': ['verbose','debug','v'], \
+            'go': ['go','enter','cd','move', 'walk', 'n', 's', 'e', 'w'], \
+            'where': ['where','pwd'], \
+            'inventory': ['inventory', 'i', 'stuff', 'possessions']}
+
 def extract_commands(input):
     ''' Processes the raw user input and returns a list of canonical
     command word(s) from a large number of possible synonyms; runs this
     list through a prioritization function to return a single command 
     to execute'''
-    # todo: put commands and synonyms in other file; import from there
-    commands = {'quit': ['quit','exit','leave','goodbye','bye','q'], \
-                'look': ['look','examine', 'ls', 'list', 'dir'], \
-                'help': ['help','options','menu','h'], \
-                'verbose': ['verbose','debug','v'], \
-                'go': ['go','enter','cd','move', 'walk'], \
-                'where': ['where','pwd']}
     # flattened list of all command dictionary values
     all_commands = [x for y in commands.values() for x in y]
     # now identify dict keys for all command words in user input
@@ -44,7 +46,7 @@ def extract_commands(input):
 def prioritize_commands(input):
     ''' Receives a tuple of one or more commands; returns the highest priority
     command as a string '''
-    priority_order = ('quit','help','look','go','verbose')
+    priority_order = ('quit','help','look','go','verbose','inventory')
     # Manage cases of poor input hygiene:
     if len(input) < 2:
         if len(input) == 1:
@@ -61,26 +63,34 @@ def prioritize_commands(input):
     return (command_priorities[0])
 
 def execute_command(action, raw_user_input=None):
-    if action == 'look':
-        logger.info('User wants to examine current directory')
-        look(rest_of_text=raw_user_input)
-    elif action == 'help':
-        logger.info('User has asked for help')
-        help_output = execute_help()
-        print(help_output)
+    ''' Calls the function to execute a specific action and performs any 
+    other necessary tasks (none yet, but I'm sure I'll think of something) '''
+    # when zero arguments are needed: 
+    if action in ('help', 'quit', 'inventory'):
+        correct_function = globals()['execute_{}'.format(action)]
+        correct_function()
+    # when one argument is needed: 
+    elif action == 'look':
+        correct_function = globals()['execute_{}'.format(action)]
+        correct_function(rest_of_text=raw_user_input)
         #print("Feeling lost? Available commands are 'look' (look at current directory) and 'go' (move to another directory). Type 'quit' at any time to stop.")
     elif action == 'where':
         logger.info('User wants an action that is only a placeholder at present')
         print("Haha, this is embarrassing, I haven't coded that yet.")
     elif action == 'go':
-        move_path(rest_of_text=raw_user_input)
-    elif action == 'quit':
-        logger.info('User has chosen to exit')
-        print('Goodbye!')
-        sys.exit(0)
+        correct_function = globals()['execute_{}'.format(action)]
+        correct_function(rest_of_text=raw_user_input)
     else:
         logger.info("We recognize this as a command but don't know what to do about it: {}".format(action))
         print("Sorry! I don't know what to tell you.")
+
+def execute_inventory():
+    print('You check your inventory. You have: a stick of gum, a business card, a pair of scissors. I have not programmed any actions you can take with any of these items.')
+
+def execute_quit():
+    logger.info('User has chosen to exit')
+    print('Goodbye!')
+    sys.exit(0)
 
 def execute_help():
     ''' Returns a string that lists all recognized functions and a brief 
@@ -91,11 +101,11 @@ def execute_help():
     command_output = '\n'.join(['{0:5}{1}{2:10}{3}{4}'.format
                                 ('', ansi.colors['red'], x, ansi.colors['default'],
                                  commands[x]) for x in commands.keys()])
-    return '\n'.join([first_line, command_output])
+    print('\n'.join([first_line, command_output]))
     
-def look(path=os.getcwd(), rest_of_text=None):
+def execute_look(path=os.getcwd(), rest_of_text=None):
     ''' Prints out the files and directories '''
-    logger.info('Now preparing to narrate for {}'.format(path))
+    logger.info('User wants to examine {}'.format(path))
     files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
     dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
     if len(files) < 1:
@@ -107,7 +117,7 @@ def look(path=os.getcwd(), rest_of_text=None):
     else:
         print('You can go: {}'.format(dirs))
 
-def move_path(path=os.getcwd(), rest_of_text=None):
+def execute_go(path=os.getcwd(), rest_of_text=None):
     ''' Changes the scope of focus to a different filepath '''
     logger.info('Now running move_path function')
     available_dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
