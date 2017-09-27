@@ -2,6 +2,7 @@
 from __future__ import print_function
 import string
 import os, sys
+import subprocess # to get terminal size
 import logging
 import ansi_colors as ansi
 
@@ -105,12 +106,30 @@ def execute_help():
     
 def execute_look(path=os.getcwd(), rest_of_text=None):
     ''' Prints out the files and directories '''
+    rows, columns = [int(x) for x in 
+                     subprocess.check_output(['stty', 'size']).split()]
     logger.info('User wants to examine {}'.format(path))
     files = [x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x))]
     dirs = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
     if len(files) < 1:
         print('There are no files here.')
     else:
+        files.sort()
+        # figure out the spacing - then put this in a helper function
+        longest_file = max([len(x) for x in files])
+        if len(files) > 6: # three columns, four spaces
+            # format will go: ___file1___file2___file3___
+            # make sure there are at least four spaces between files
+            column_num, space_num, i = 3, 4, 0
+            while i < len(files):
+                space_length = (columns - len(''.join(files[0:b])))/space_num
+                if space_length > 4:
+                    # fix this later
+                    first_line = '{a:>{fill}}{b:>{fill}}'.format(a=files[0], b=files[1], fill=space_length)                    
+            # find difference between 
+        while x < columns:
+            # fill this in
+            break
         print('You see some files: {}'.format(files))
     if len(dirs) < 1:
         print('You can go: back the way you came')
