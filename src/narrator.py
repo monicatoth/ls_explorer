@@ -3,7 +3,7 @@ from __future__ import print_function
 import string
 import os, sys
 import logging
-import ansi_colors as ansi
+import utils as u
 import commands as c
 
 logger = logging.getLogger('explorer.narrator')
@@ -12,9 +12,9 @@ def narrate():
     ''' Simple function to provide a user prompt, accept input, and pass it
     along to the functions that recognize and fulfill commands '''
     logger.info('Beginning narrate function')
-    print("Welcome! Type '{0}quit{1}' at any time to stop the program. Type '{0}help{1}' to see your options.".format(ansi.colors['red'], ansi.colors['default']))
+    print("Welcome! Type '{0}quit{1}' at any time to stop the program. Type '{0}help{1}' to see your options.".format(u.colors['red'], u.colors['default']))
     while True: 
-        user_input = raw_input('{0}> {1}'.format(ansi.colors['black'], ansi.colors['default']))
+        user_input = raw_input('{0}> {1}'.format(u.colors['black'], u.colors['default']))
         commands = c.extract_commands(user_input)
         if commands is None:
             logger.info('User has specified no command words')

@@ -4,7 +4,7 @@ import string
 import os, sys
 import subprocess # to get terminal size
 import logging
-import ansi_colors as ansi
+import utils as u
 
 logger = logging.getLogger('explorer.narrator')
 
@@ -100,9 +100,42 @@ def execute_help():
     commands = {'look': 'look at current directory', 'go': 'move to another directory', 'quit': 'exit to the command line'}
     first_line = "Feeling lost? Available commands are:"
     command_output = '\n'.join(['{0:5}{1}{2:10}{3}{4}'.format
-                                ('', ansi.colors['red'], x, ansi.colors['default'],
+                                ('', u.colors['red'], x, u.colors['default'],
                                  commands[x]) for x in commands.keys()])
     print('\n'.join([first_line, command_output]))
+
+def format_list(l, column_num=0):
+    ''' Recursive function; takes a list (e.g. of files) and returns a 
+    multi-line string with the list items nicely padded by empty space'''
+    if len(l) < 5 and column_num < 1:
+        # short lists are easy; we use just one column
+        # unless we have specified our column_num for some reason
+        padded_list = ['    {}'.format(x) for x in files]
+        return '\n'.join(padded_list)
+    else:
+        rows, columns = [int(x) for x in 
+                         subprocess.check_output(['stty', 'size']).split()]
+        line_list = []
+        longest_item = max([len(x) for x in l])
+        if column_num < 1: # then we have not already called this function!
+            # we begin with the assumption that we'll have two columns for
+            # lists under 10 items, and three columns otherwise.
+        else:
+            # column_num's word is law
+            spacing = longest_item + 4
+            i = 0
+            while i < len(l):
+                if i + column_num > len(l):
+                    single_row = l[i:]
+                else:
+                    single_row = l[i:i+column_num]
+                format_string = ['{:<{fill}}' for x in single_row]
+                line_list.append(''.join(format_string).format(*single_row, fill=spacing))
+                i = i + column_num
+                
+                
+            
+    
     
 def execute_look(path=os.getcwd(), rest_of_text=None):
     ''' Prints out the files and directories '''
@@ -120,12 +153,16 @@ def execute_look(path=os.getcwd(), rest_of_text=None):
         if len(files) > 6: # three columns, four spaces
             # format will go: ___file1___file2___file3___
             # make sure there are at least four spaces between files
-            column_num, space_num, i = 3, 4, 0
+            column_num, space_num = 3, 4
+            if (longest_file + 4) <= columns/3:
+                pass
+            else:
+                columns = 2
             while i < len(files):
                 space_length = (columns - len(''.join(files[0:b])))/space_num
                 if space_length > 4:
                     # fix this later
-                    first_line = '{a:>{fill}}{b:>{fill}}'.format(a=files[0], b=files[1], fill=space_length)                    
+                    first_line = '{a:<{fill}}{b:<{fill}}'.format(a=files[0], b=files[1], fill=space_length)                    
             # find difference between 
         while x < columns:
             # fill this in
